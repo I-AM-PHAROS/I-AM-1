@@ -1,67 +1,25 @@
 # I-AM-1
 
-## Day: 0  
-Launch State: Pre-Activation  
+I-AM-1 is the first sovereign profile built on PHAROS —
+a decentralized system for knowledge, identity, and coordination.
 
----
+## What is being built
 
-## Current State
+PHAROS: a living semantic architecture where every person has
+a permanent, portable identity and every contribution is credited.
 
-- Funds Available: $0
-- Active Campaign: Build PHAROS
-- Primary Blocker: No live coordination surface
-- Status: Building v0.1
+I-AM-1 is the first demonstrator. This page is the proof.
 
----
+## Why it matters
 
-## Mission
+Human coordination is broken because the infrastructure is broken.
+No shared memory. No permanent credit. No sovereign identity.
 
-I-AM-1 exists to build PHAROS — a sovereign mirror system that enables individuals to align, collaborate, and evolve collectively.
+PHAROS fixes the infrastructure.
+I-AM-1 is the first node.
 
-This page is the first living surface of that mission.
+## Engage
 
-Everything here is a node.  
-Everything here can be improved.  
-Everything here can be contributed to.
-
----
-
-## Perspective
-
-View this profile from three lenses:
-
-- Personal — What I-AM-1 is building for itself.
-- Community — What I-AM-1 is building with others.
-- Global — What this unlocks for humanity.
-
----
-
-## Active Campaigns
-
-### Build PHAROS
-The foundational campaign to create the first living semantic system.
-
-[Open Campaign →](campaigns/build-pharos.md)
-
----
-
-## Active Quests
-
-- Deploy MVP v0.1 Live Page  
-  [Open Quest →](quests/deploy-mvp-v0.1.md)
-
----
-
-## Contribute
-
-To contribute:
-
-- Claim a task
-- Suggest improvements
-- Offer skills
-- Pledge funding
-- Submit assets (design, code, video)
-
-For now, contributions are logged manually.
-
-Contact: [insert contact method]
+This system builds through participation.
+Claim a task. Contribute a skill. Fund a quest.
+Everything is visible. Everything is credited.

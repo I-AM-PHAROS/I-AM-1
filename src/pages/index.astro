@@ -1,12 +1,342 @@
 ---
-import IndexContent from '../../runtime/index.md';
----
+import fs from 'node:fs';
+import path from 'node:path';
+import { marked } from 'marked';
 
-<html>
-  <head>
-    <title>I-AM-1</title>
-  </head>
-  <body style="font-family: sans-serif; padding: 40px;">
-    <IndexContent />
-  </body>
+// Read runtime files
+const indexRaw = fs.readFileSync(path.resolve('./runtime/index.md'), 'utf-8');
+const stateRaw = fs.readFileSync(path.resolve('./runtime/state.md'), 'utf-8');
+
+const indexContent = marked(indexRaw);
+const stateContent = marked(stateRaw);
+
+// Load campaigns
+const campaignsDir = path.resolve('./runtime/campaigns');
+const campaigns = fs.readdirSync(campaignsDir)
+  .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+  .map(f => {
+    const raw = fs.readFileSync(path.join(campaignsDir, f), 'utf-8');
+    const lines = raw.split('\n');
+    const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
+    const body = marked(raw);
+    return { title, body, slug: f.replace('.md','') };
+  });
+
+// Load quests
+const questsDir = path.resolve('./runtime/quests');
+const quests = fs.readdirSync(questsDir)
+  .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+  .map(f => {
+    const raw = fs.readFileSync(path.join(questsDir, f), 'utf-8');
+    const lines = raw.split('\n');
+    const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
+    const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
+    const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
+    const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
+    return { title, status, slug: f.replace('.md','') };
+  });
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>I-AM-1 · PHAROS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0c0c;
+      --surface: #111111;
+      --border: #222222;
+      --fg: #d8d8d8;
+      --dim: #555555;
+      --accent: #c8a96e;
+      --tag: #3a3a3a;
+      --font-body: Georgia, 'Times New Roman', serif;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 6rem;
+    }
+
+    /* --- SECTION SPACING --- */
+    section {
+      margin-bottom: 4rem;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* --- SECTION A: IDENTITY HEADER --- */
+    .identity-header h1 {
+      font-size: 1.5rem;
+      font-weight: normal;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .identity-header .tagline {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--dim);
+      margin-bottom: 1.5rem;
+    }
+
+    .identity-body p {
+      margin-bottom: 0.9rem;
+      color: var(--fg);
+    }
+
+    .identity-body h2 {
+      font-size: 1rem;
+      font-weight: normal;
+      color: var(--accent);
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    /* --- SECTION B: STATE --- */
+    .state-content h2 {
+      font-size: 0.9rem;
+      font-weight: normal;
+      color: var(--accent);
+      margin: 1.25rem 0 0.4rem;
+    }
+
+    .state-content h2:first-child {
+      margin-top: 0;
+    }
+
+    .state-content p,
+    .state-content li {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--fg);
+      margin-bottom: 0.3rem;
+    }
+
+    .state-content ul {
+      padding-left: 1.2rem;
+    }
+
+    .state-content table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .state-content th {
+      text-align: left;
+      color: var(--dim);
+      padding: 0.3rem 0.6rem 0.3rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .state-content td {
+      padding: 0.3rem 0.6rem 0.3rem 0;
+      color: var(--fg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* --- SECTION C: CAMPAIGNS --- */
+    .campaign-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .campaign-card h1 {
+      font-size: 1rem;
+      font-weight: normal;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .campaign-card h2 {
+      font-size: 0.85rem;
+      font-weight: normal;
+      color: var(--dim);
+      margin: 1rem 0 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: var(--font-mono);
+    }
+
+    .campaign-card p,
+    .campaign-card li {
+      font-size: 0.85rem;
+      color: var(--fg);
+      margin-bottom: 0.3rem;
+    }
+
+    .campaign-card ul {
+      padding-left: 1.2rem;
+    }
+
+    /* --- SECTION D: QUESTS --- */
+    .quest-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .quest-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      gap: 1rem;
+    }
+
+    .quest-list li:first-child {
+      border-top: 1px solid var(--border);
+    }
+
+    .quest-title {
+      color: var(--fg);
+    }
+
+    .quest-status {
+      color: var(--dim);
+      white-space: nowrap;
+      font-size: 0.75rem;
+    }
+
+    /* --- SECTION E: CONTRIBUTE --- */
+    .contribute-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+    }
+
+    .contribute-block p {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--fg);
+      margin-bottom: 0.5rem;
+    }
+
+    .contribute-block .contact {
+      margin-top: 1rem;
+      color: var(--dim);
+      font-size: 0.78rem;
+    }
+
+    .contribute-block a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .contribute-block a:hover {
+      text-decoration: underline;
+    }
+
+    /* --- FOOTER --- */
+    footer {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--dim);
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- SECTION A — IDENTITY HEADER -->
+    <section class="identity-header">
+      <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.1</div>
+      <h1>I-AM-1</h1>
+      <div class="tagline">node_001 · Alexandria, Egypt · active</div>
+      <div class="identity-body">
+        <Fragment set:html={indexContent} />
+      </div>
+    </section>
+
+    <!-- SECTION B — CURRENT STATE -->
+    <section>
+      <div class="section-label">Current State</div>
+      <div class="state-content">
+        <Fragment set:html={stateContent} />
+      </div>
+    </section>
+
+    <!-- SECTION C — CAMPAIGNS -->
+    <section>
+      <div class="section-label">Active Campaigns</div>
+      {campaigns.length === 0 ? (
+        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No active campaigns.</p>
+      ) : (
+        campaigns.map(c => (
+          <div class="campaign-card">
+            <Fragment set:html={c.body} />
+          </div>
+        ))
+      )}
+    </section>
+
+    <!-- SECTION D — QUESTS -->
+    <section>
+      <div class="section-label">Active Quests</div>
+      {quests.length === 0 ? (
+        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No active quests.</p>
+      ) : (
+        <ul class="quest-list">
+          {quests.map(q => (
+            <li>
+              <span class="quest-title">{q.title}</span>
+              <span class="quest-status">{q.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <!-- SECTION E — CONTRIBUTION BLOCK -->
+    <section>
+      <div class="section-label">Contribute</div>
+      <div class="contribute-block">
+        <p>This system builds through participation.</p>
+        <p>Claim a task. Contribute a skill. Fund a quest.</p>
+        <p>Everything is visible. Everything is credited.</p>
+        <p class="contact">
+          Contact: <a href="mailto:the_i.am.1@proton.me">the_i.am.1@proton.me</a>
+          &nbsp;·&nbsp;
+          Telegram: <a href="https://t.me/I_AM_1ONE" target="_blank">@I_AM_1ONE</a>
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      I-AM-1 · PHAROS · Alexandria · {new Date().getFullYear()}
+    </footer>
+
+  </div>
+</body>
 </html>
