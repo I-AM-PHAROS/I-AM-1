@@ -1,11 +1,18 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import fs from 'fs';
+import path from 'path';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const filePath = path.resolve('./runtime/index.md');
+const content = fs.readFileSync(filePath, 'utf-8');
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html>
+  <head>
+    <title>I-AM-1</title>
+  </head>
+  <body>
+    <div style="max-width: 800px; margin: 40px auto; font-family: sans-serif;">
+      <div innerHTML={content}></div>
+    </div>
+  </body>
+</html>
