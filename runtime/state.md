@@ -1,25 +1,37 @@
-# State — I-AM-1
+# Current Focus
 
-## Current Focus
+- Stabilize I-AM-1 public runtime
+- Activate aligned collaborators
+- Establish transparent mission execution surface
 
-Deploying v0.1 public dashboard.
-First live surface of the PHAROS demonstrator.
+# Active Campaign
 
-## Resources
+**Deploy PHAROS MVP v0.1**
+Create a live, minimal, public mission dashboard that allows structured collaboration and visible progress.
 
-- Available Funds: $0
-- Infrastructure: GitHub repo initialized, Astro configured, GitHub Pages pending
-- Vault: Active — D:\1\SAM-I-AM\I-AM-1
+# Resources
 
-## Needs
+- Deployment: GitHub Pages
+- Runtime: Astro + Markdown
+- AI Support: Claude + GPT
+- Engineering: Ian (runtime layer)
+- Architecture: SAM-I-AM
 
-- GitHub Pages enabled on repo (Settings → Pages → GitHub Actions)
-- Frontend review of v0.1 dashboard
-- First external contributors
-- Funding to sustain build phase
+# Immediate Needs
 
-## Active Contributors
+- 30-day operational funding
+- UI / UX refinement
+- Frontend development support
+- Narrative design assistance
 
-| Handle | Role | Status |
-|--------|------|--------|
-| I-AM-1 | Founder / Architect | Active |
+# Active Contributors
+
+- SAM-I-AM — Mission architecture
+- Ian — Runtime engineering
+
+# How To Engage
+
+- Review active campaigns and quests
+- Fork repository and submit improvements
+- Offer skill contribution aligned with mission
+- Provide financial support to stabilize build phase
