@@ -1,8 +1,8 @@
-# Mission — I-AM-1
+# Mission - I-AM-1
 
 ## Core Mission
 
-To build PHAROS — a sovereign, semantic mirror system that allows individuals to coordinate without fragmentation.
+To build PHAROS - a sovereign, semantic mirror system that allows individuals to coordinate without fragmentation.
 
 ## Long-Term Vision
 

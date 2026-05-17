@@ -1,18 +1,12 @@
 ---
-import fs from 'fs';
-import path from 'path';
-
-const filePath = path.resolve('./runtime/index.md');
-const content = fs.readFileSync(filePath, 'utf-8');
+import IndexContent from '../../runtime/index.md';
 ---
 
 <html>
   <head>
     <title>I-AM-1</title>
   </head>
-  <body>
-    <div style="max-width: 800px; margin: 40px auto; font-family: sans-serif;">
-      <div innerHTML={content}></div>
-    </div>
+  <body style="font-family: sans-serif; padding: 40px;">
+    <IndexContent />
   </body>
 </html>
