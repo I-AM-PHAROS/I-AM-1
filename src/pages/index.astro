@@ -35,6 +35,25 @@ const quests = fs.readdirSync(questsDir)
     const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
     return { title, status, slug: f.replace('.md','') };
   });
+
+// Load tasks
+const tasksDir = path.resolve('./runtime/tasks');
+const tasks = fs.existsSync(tasksDir)
+  ? fs.readdirSync(tasksDir)
+      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+      .map(f => {
+        const raw = fs.readFileSync(path.join(tasksDir, f), 'utf-8');
+        const lines = raw.split('\n');
+        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
+        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
+        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
+        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
+        const ownerLine = lines.find(l => l.toLowerCase().startsWith('## owner'));
+        const ownerIdx = ownerLine ? lines.indexOf(ownerLine) : -1;
+        const owner = ownerIdx >= 0 ? (lines[ownerIdx + 2]?.trim() ?? 'Unassigned') : 'Unassigned';
+        return { title, status, owner, slug: f.replace('.md','') };
+      })
+  : [];
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -318,7 +337,24 @@ const quests = fs.readdirSync(questsDir)
       )}
     </section>
 
-    <!-- SECTION E — CONTRIBUTION BLOCK -->
+    <!-- SECTION E — TASKS -->
+    <section>
+      <div class="section-label">Open Tasks</div>
+      {tasks.length === 0 ? (
+        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No open tasks.</p>
+      ) : (
+        <ul class="quest-list">
+          {tasks.map(t => (
+            <li>
+              <span class="quest-title">{t.title}</span>
+              <span class="quest-status">{t.owner} · {t.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <!-- SECTION F — CONTRIBUTION BLOCK -->
     <section>
       <div class="section-label">Contribute</div>
       <div class="contribute-block">
