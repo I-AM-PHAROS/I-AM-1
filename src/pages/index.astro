@@ -54,6 +54,47 @@ const tasks = fs.existsSync(tasksDir)
         return { title, status, owner, slug: f.replace('.md','') };
       })
   : [];
+
+// Load blockers
+const blockersDir = path.resolve('./runtime/blockers');
+const blockers = fs.existsSync(blockersDir)
+  ? fs.readdirSync(blockersDir)
+      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+      .map(f => {
+        const raw = fs.readFileSync(path.join(blockersDir, f), 'utf-8');
+        const lines = raw.split('\n');
+        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
+        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
+        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
+        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
+        const blocksLine = lines.find(l => l.toLowerCase().startsWith('## blocks'));
+        const blocksIdx = blocksLine ? lines.indexOf(blocksLine) : -1;
+        const blocks = blocksIdx >= 0 ? (lines[blocksIdx + 2]?.trim() ?? '—') : '—';
+        return { title, status, blocks, slug: f.replace('.md','') };
+      })
+  : [];
+
+// Load resources
+const resourcesDir = path.resolve('./runtime/resources');
+const resources = fs.existsSync(resourcesDir)
+  ? fs.readdirSync(resourcesDir)
+      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+      .map(f => {
+        const raw = fs.readFileSync(path.join(resourcesDir, f), 'utf-8');
+        const lines = raw.split('\n');
+        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
+        const typeLine = lines.find(l => l.toLowerCase().startsWith('## type'));
+        const typeIdx = typeLine ? lines.indexOf(typeLine) : -1;
+        const type = typeIdx >= 0 ? (lines[typeIdx + 2]?.trim() ?? '—') : '—';
+        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
+        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
+        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
+        const purposeLine = lines.find(l => l.toLowerCase().startsWith('## purpose'));
+        const purposeIdx = purposeLine ? lines.indexOf(purposeLine) : -1;
+        const purpose = purposeIdx >= 0 ? (lines[purposeIdx + 2]?.trim() ?? '') : '';
+        return { title, type, status, purpose, slug: f.replace('.md','') };
+      })
+  : [];
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -71,6 +112,7 @@ const tasks = fs.existsSync(tasksDir)
       --fg: #d8d8d8;
       --dim: #555555;
       --accent: #c8a96e;
+      --warn: #c87070;
       --tag: #3a3a3a;
       --font-body: Georgia, 'Times New Roman', serif;
       --font-mono: 'Courier New', Courier, monospace;
@@ -90,10 +132,7 @@ const tasks = fs.existsSync(tasksDir)
       padding: 3rem 1.5rem 6rem;
     }
 
-    /* --- SECTION SPACING --- */
-    section {
-      margin-bottom: 4rem;
-    }
+    section { margin-bottom: 4rem; }
 
     .section-label {
       font-family: var(--font-mono);
@@ -106,7 +145,7 @@ const tasks = fs.existsSync(tasksDir)
       border-bottom: 1px solid var(--border);
     }
 
-    /* --- SECTION A: IDENTITY HEADER --- */
+    /* IDENTITY */
     .identity-header h1 {
       font-size: 1.5rem;
       font-weight: normal;
@@ -114,19 +153,13 @@ const tasks = fs.existsSync(tasksDir)
       letter-spacing: 0.05em;
       margin-bottom: 0.25rem;
     }
-
     .identity-header .tagline {
       font-family: var(--font-mono);
       font-size: 0.8rem;
       color: var(--dim);
       margin-bottom: 1.5rem;
     }
-
-    .identity-body p {
-      margin-bottom: 0.9rem;
-      color: var(--fg);
-    }
-
+    .identity-body p { margin-bottom: 0.9rem; color: var(--fg); }
     .identity-body h2 {
       font-size: 1rem;
       font-weight: normal;
@@ -134,18 +167,14 @@ const tasks = fs.existsSync(tasksDir)
       margin: 1.5rem 0 0.5rem;
     }
 
-    /* --- SECTION B: STATE --- */
+    /* STATE */
     .state-content h2 {
       font-size: 0.9rem;
       font-weight: normal;
       color: var(--accent);
       margin: 1.25rem 0 0.4rem;
     }
-
-    .state-content h2:first-child {
-      margin-top: 0;
-    }
-
+    .state-content h2:first-child { margin-top: 0; }
     .state-content p,
     .state-content li {
       font-family: var(--font-mono);
@@ -153,46 +182,50 @@ const tasks = fs.existsSync(tasksDir)
       color: var(--fg);
       margin-bottom: 0.3rem;
     }
+    .state-content ul { padding-left: 1.2rem; }
 
-    .state-content ul {
-      padding-left: 1.2rem;
+    /* METRICS ROW */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-bottom: 0;
     }
-
-    .state-content table {
-      width: 100%;
-      border-collapse: collapse;
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric-card .metric-count {
       font-family: var(--font-mono);
-      font-size: 0.8rem;
+      font-size: 2rem;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.4rem;
     }
-
-    .state-content th {
-      text-align: left;
+    .metric-card .metric-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       color: var(--dim);
-      padding: 0.3rem 0.6rem 0.3rem 0;
-      border-bottom: 1px solid var(--border);
     }
+    .metric-card.has-blockers .metric-count { color: var(--warn); }
 
-    .state-content td {
-      padding: 0.3rem 0.6rem 0.3rem 0;
-      color: var(--fg);
-      border-bottom: 1px solid var(--border);
-    }
-
-    /* --- SECTION C: CAMPAIGNS --- */
+    /* CAMPAIGNS */
     .campaign-card {
       background: var(--surface);
       border: 1px solid var(--border);
       padding: 1.25rem 1.5rem;
       margin-bottom: 1rem;
     }
-
     .campaign-card h1 {
       font-size: 1rem;
       font-weight: normal;
       color: var(--accent);
       margin-bottom: 0.75rem;
     }
-
     .campaign-card h2 {
       font-size: 0.85rem;
       font-weight: normal;
@@ -202,25 +235,20 @@ const tasks = fs.existsSync(tasksDir)
       letter-spacing: 0.08em;
       font-family: var(--font-mono);
     }
-
     .campaign-card p,
     .campaign-card li {
       font-size: 0.85rem;
       color: var(--fg);
       margin-bottom: 0.3rem;
     }
+    .campaign-card ul { padding-left: 1.2rem; }
 
-    .campaign-card ul {
-      padding-left: 1.2rem;
-    }
-
-    /* --- SECTION D: QUESTS --- */
-    .quest-list {
+    /* LISTS — quests / tasks / blockers / resources */
+    .item-list {
       list-style: none;
       padding: 0;
     }
-
-    .quest-list li {
+    .item-list li {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
@@ -230,51 +258,79 @@ const tasks = fs.existsSync(tasksDir)
       font-size: 0.82rem;
       gap: 1rem;
     }
-
-    .quest-list li:first-child {
-      border-top: 1px solid var(--border);
-    }
-
-    .quest-title {
-      color: var(--fg);
-    }
-
-    .quest-status {
+    .item-list li:first-child { border-top: 1px solid var(--border); }
+    .item-title { color: var(--fg); }
+    .item-meta {
       color: var(--dim);
       white-space: nowrap;
       font-size: 0.75rem;
+      text-align: right;
     }
+    .item-meta.warn { color: var(--warn); }
 
-    /* --- SECTION E: CONTRIBUTE --- */
-    .contribute-block {
+    /* RESOURCES */
+    .resource-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 1.5rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .resource-card .resource-title {
+      font-size: 0.9rem;
+      font-weight: normal;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+    .resource-card .resource-type {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .resource-card .resource-purpose {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--fg);
     }
 
+    /* CONTRIBUTE */
+    .contribute-block {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      padding: 1.5rem;
+    }
     .contribute-block p {
       font-family: var(--font-mono);
       font-size: 0.82rem;
       color: var(--fg);
       margin-bottom: 0.5rem;
     }
-
-    .contribute-block .contact {
-      margin-top: 1rem;
-      color: var(--dim);
-      font-size: 0.78rem;
+    .contribute-block .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
     }
-
-    .contribute-block a {
+    .cta-link {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
       color: var(--accent);
       text-decoration: none;
+      border: 1px solid var(--accent);
+      padding: 0.4rem 0.9rem;
+    }
+    .cta-link:hover { background: var(--accent); color: var(--bg); }
+
+    /* EMPTY STATE */
+    .empty {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--dim);
     }
 
-    .contribute-block a:hover {
-      text-decoration: underline;
-    }
-
-    /* --- FOOTER --- */
+    /* FOOTER */
     footer {
       font-family: var(--font-mono);
       font-size: 0.7rem;
@@ -288,17 +344,44 @@ const tasks = fs.existsSync(tasksDir)
 <body>
   <div class="container">
 
-    <!-- SECTION A — IDENTITY HEADER -->
+    <!-- IDENTITY -->
     <section class="identity-header">
       <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.1</div>
       <h1>I-AM-1</h1>
-      <div class="tagline">node_001 · Alexandria, Egypt · active</div>
+      <div class="tagline">node_001 · active · sovereign</div>
       <div class="identity-body">
         <Fragment set:html={indexContent} />
       </div>
     </section>
 
-    <!-- SECTION B — CURRENT STATE -->
+    <!-- METRICS ROW -->
+    <section>
+      <div class="section-label">System State</div>
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-count">{campaigns.length}</div>
+          <div class="metric-label">Campaigns</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-count">{quests.length}</div>
+          <div class="metric-label">Quests</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-count">{tasks.length}</div>
+          <div class="metric-label">Tasks</div>
+        </div>
+        <div class={`metric-card${blockers.length > 0 ? ' has-blockers' : ''}`}>
+          <div class="metric-count">{blockers.length}</div>
+          <div class="metric-label">Blockers</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-count">{resources.length}</div>
+          <div class="metric-label">Resources</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRENT STATE -->
     <section>
       <div class="section-label">Current State</div>
       <div class="state-content">
@@ -306,11 +389,11 @@ const tasks = fs.existsSync(tasksDir)
       </div>
     </section>
 
-    <!-- SECTION C — CAMPAIGNS -->
+    <!-- CAMPAIGNS -->
     <section>
       <div class="section-label">Active Campaigns</div>
       {campaigns.length === 0 ? (
-        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No active campaigns.</p>
+        <p class="empty">No active campaigns.</p>
       ) : (
         campaigns.map(c => (
           <div class="campaign-card">
@@ -320,57 +403,90 @@ const tasks = fs.existsSync(tasksDir)
       )}
     </section>
 
-    <!-- SECTION D — QUESTS -->
+    <!-- QUESTS -->
     <section>
       <div class="section-label">Active Quests</div>
       {quests.length === 0 ? (
-        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No active quests.</p>
+        <p class="empty">No active quests.</p>
       ) : (
-        <ul class="quest-list">
+        <ul class="item-list">
           {quests.map(q => (
             <li>
-              <span class="quest-title">{q.title}</span>
-              <span class="quest-status">{q.status}</span>
+              <span class="item-title">{q.title}</span>
+              <span class="item-meta">{q.status}</span>
             </li>
           ))}
         </ul>
       )}
     </section>
 
-    <!-- SECTION E — TASKS -->
+    <!-- TASKS -->
     <section>
       <div class="section-label">Open Tasks</div>
       {tasks.length === 0 ? (
-        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--dim);">No open tasks.</p>
+        <p class="empty">No open tasks.</p>
       ) : (
-        <ul class="quest-list">
+        <ul class="item-list">
           {tasks.map(t => (
             <li>
-              <span class="quest-title">{t.title}</span>
-              <span class="quest-status">{t.owner} · {t.status}</span>
+              <span class="item-title">{t.title}</span>
+              <span class="item-meta">{t.owner} · {t.status}</span>
             </li>
           ))}
         </ul>
       )}
     </section>
 
-    <!-- SECTION F — CONTRIBUTION BLOCK -->
+    <!-- BLOCKERS -->
+    <section>
+      <div class="section-label">Active Blockers</div>
+      {blockers.length === 0 ? (
+        <p class="empty">No active blockers.</p>
+      ) : (
+        <ul class="item-list">
+          {blockers.map(b => (
+            <li>
+              <span class="item-title">{b.title}</span>
+              <span class="item-meta warn">blocks: {b.blocks}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <!-- RESOURCES -->
+    <section>
+      <div class="section-label">Resource Needs</div>
+      {resources.length === 0 ? (
+        <p class="empty">No open resource needs.</p>
+      ) : (
+        resources.map(r => (
+          <div class="resource-card">
+            <div class="resource-title">{r.title}</div>
+            <div class="resource-type">{r.type} · {r.status}</div>
+            {r.purpose && <div class="resource-purpose">{r.purpose}</div>}
+          </div>
+        ))
+      )}
+    </section>
+
+    <!-- CONTRIBUTE -->
     <section>
       <div class="section-label">Contribute</div>
       <div class="contribute-block">
         <p>This system builds through participation.</p>
-        <p>Claim a task. Contribute a skill. Fund a quest.</p>
-        <p>Everything is visible. Everything is credited.</p>
-        <p class="contact">
-          Contact: <a href="mailto:the_i.am.1@proton.me">the_i.am.1@proton.me</a>
-          &nbsp;·&nbsp;
-          Telegram: <a href="https://t.me/I_AM_1ONE" target="_blank">@I_AM_1ONE</a>
-        </p>
+        <p>Every contribution is permanently credited. Every task is visible. Every quest is open.</p>
+        <p>Claim a task. Offer a skill. Fund a resource need. The work is here. The mission is real.</p>
+        <div class="cta-row">
+          <a class="cta-link" href="mailto:the_i.am.1@proton.me">Email I-AM-1</a>
+          <a class="cta-link" href="https://t.me/I_AM_1ONE" target="_blank">Telegram</a>
+          <a class="cta-link" href="https://github.com/I-AM-PHAROS/I-AM-1" target="_blank">GitHub</a>
+        </div>
       </div>
     </section>
 
     <footer>
-      I-AM-1 · PHAROS · Alexandria · {new Date().getFullYear()}
+      I-AM-1 · PHAROS · node_001 · {new Date().getFullYear()}
     </footer>
 
   </div>

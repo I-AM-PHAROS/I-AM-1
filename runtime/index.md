@@ -1,22 +1,31 @@
 # I-AM-1
 
 I-AM-1 is the first sovereign profile built on PHAROS —
-a decentralized system for knowledge, identity, and coordination.
+a system for permanent identity, credited knowledge, and human coordination.
 
 ## What is being built
 
-PHAROS: a living semantic architecture where every person has
-a permanent, portable identity and every contribution is credited.
+PHAROS: a living architecture where every person has a permanent, portable identity and every contribution is permanently credited. No platform can erase it. No algorithm can distort it.
 
-I-AM-1 is the first demonstrator. This page is the proof.
+I-AM-1 is the first node. This page is the proof.
 
 ## Why it matters
 
-Human coordination is broken because the infrastructure is broken.
+Human coordination fails because the infrastructure fails.
 No shared memory. No permanent credit. No sovereign identity.
+People repeat themselves. AI forgets. Contributions disappear.
 
-PHAROS fixes the infrastructure.
-I-AM-1 is the first node.
+PHAROS fixes the substrate.
+I-AM-1 demonstrates it works.
+
+## What I-AM-1 is
+
+A public demonstrator identity. Non-identifying by design.
+The human behind I-AM-1 is sovereign and private.
+The mission is public and open.
+
+Any person should be able to see themselves in I-AM-1 —
+because the mission belongs to everyone.
 
 ## Engage
 

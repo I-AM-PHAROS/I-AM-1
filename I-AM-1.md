@@ -4,7 +4,7 @@ type: public_identity_projection
 scope: public
 status: active
 parent:
-  - "[[1-I/1_AM/AM]]"
+  - "[[_INBOX/1-I/1_AM/AM]]"
 siblings:
   - "[[SAM-I-AM]]"
   - "[[SAMUEL-DAVID]]"
@@ -17,11 +17,11 @@ relations:
   embodied_identity:
     - "[[SAMUEL-DAVID]]"
   governed_by:
-    - "[[1-I/1_AM/AM]]"
+    - "[[_INBOX/1-I/1_AM/AM]]"
   contributes_to:
-    - "[[1_PHAROS/PHAROS]]"
+    - "[[_INBOX/1_PHAROS/PHAROS]]"
   recognized_by:
-    - "[[1_PHAROS/PHAROS]]"
+    - "[[_INBOX/1_PHAROS/PHAROS]]"
 privacy:
   personal_data: abstracted
   identity_linking: public_projection_only
@@ -76,10 +76,10 @@ Identity stack:
 [[SAM-I-AM]]
 = sovereign private identity boundary
 
-[[SAM-I-AM/I-AM-1/I-AM-1]]
+[[EYE/I-AM-1/I-AM-1]]
 = public semantic projection
 
-[[1-I/1_AM/AM]]
+[[_INBOX/1-I/1_AM/AM]]
 = sovereign operating organism
 
 This preserves layered identity sovereignty.
@@ -102,7 +102,7 @@ Private identity remains sovereign.
 
 PHAROS recognizes:
 
-[[SAM-I-AM/I-AM-1/I-AM-1]]
+[[EYE/I-AM-1/I-AM-1]]
 
 PHAROS does NOT require:
 

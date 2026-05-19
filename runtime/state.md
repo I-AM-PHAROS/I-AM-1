@@ -1,37 +1,36 @@
 # Current Focus
 
-- Stabilize I-AM-1 public runtime
-- Activate aligned collaborators
-- Establish transparent mission execution surface
+- Ship I-AM-1 v0.1 public dashboard
+- Secure 30-day operational runway
+- Activate first aligned collaborators
 
 # Active Campaign
 
-**Deploy PHAROS MVP v0.1**
-Create a live, minimal, public mission dashboard that allows structured collaboration and visible progress.
+**Build PHAROS — Phase 1**
+Deliver a live, public, operational coordination surface that demonstrates the system building itself. I-AM-1 is the first node. The page is the proof.
 
-# Resources
+# System Status
 
-- Deployment: GitHub Pages
-- Runtime: Astro + Markdown
-- AI Support: Claude + GPT
-- Engineering: Ian (runtime layer)
-- Architecture: SAM-I-AM
+- Runtime: Astro + Markdown — operational
+- Deployment: GitHub Pages — active
+- Engineering support: Ian (P2P layer)
+- Architecture: in execution sprint
 
 # Immediate Needs
 
-- 30-day operational funding
-- UI / UX refinement
+- 30-day operational funding ($1,500–2,000)
 - Frontend development support
-- Narrative design assistance
+- Narrative design / UX refinement
+- Aligned collaborators who want to build something real
 
 # Active Contributors
 
-- SAM-I-AM — Mission architecture
+- I-AM-1 — Mission architecture and build
 - Ian — Runtime engineering
 
 # How To Engage
 
-- Review active campaigns and quests
-- Fork repository and submit improvements
-- Offer skill contribution aligned with mission
-- Provide financial support to stabilize build phase
+- Review active quests and claim a task
+- Contribute a skill aligned with the mission
+- Fund a quest or cover a resource need
+- Reach out: the_i.am.1@proton.me · @I_AM_1ONE

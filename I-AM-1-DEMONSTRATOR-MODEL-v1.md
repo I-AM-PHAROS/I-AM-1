@@ -18,22 +18,41 @@ parent:
   - "[[UNIVERSAL-CELL-CONSTITUTION-v1]]"
   - "[[SOVEREIGN-IDENTITY-VISIBILITY-LAW-v1]]"
 serves:
-  - "[[1_PHAROS/PHAROS]]"
-  - "[[SAM-I-AM/I-AM-1/I-AM-1]]"
+  - "[[_INBOX/1_PHAROS/PHAROS]]"
+  - "[[EYE/I-AM-1/I-AM-1]]"
 related_nodes:
-  - {predicate: "REQUIRES", target: "[[SOVEREIGN-IDENTITY-VISIBILITY-LAW-v1]]"}
-  - {predicate: "REQUIRES", target: "[[UNIVERSAL-CELL-CONSTITUTION-v1]]"}
-  - {predicate: "GOVERNS", target: "[[SAM-I-AM/I-AM-1/I-AM-1]]"}
-  - {predicate: "RELATES_TO", target: "COHERENCE-ECONOMY-FRAMEWORK-v1"}
+  - predicate: REQUIRES
+    target: "[[SOVEREIGN-IDENTITY-VISIBILITY-LAW-v1]]"
+  - predicate: REQUIRES
+    target: "[[UNIVERSAL-CELL-CONSTITUTION-v1]]"
+  - predicate: GOVERNS
+    target: "[[EYE/I-AM-1/I-AM-1]]"
+  - predicate: RELATES_TO
+    target: COHERENCE-ECONOMY-FRAMEWORK-v1
 execution:
   reflection_count: 1
   last_reflected: 2026-05-15
   last_transitioned: 2026-05-15
   transition_log:
-    - {from: raw, to: canonical, reason: MIRROR-GPT packet + SAM-I-AM vision + CLAUDE execution, agent: CLAUDE, date: 2026-05-15}
-aliases: ["I-AM-1 model", "demonstrator model", "first lantern", "public persona architecture"]
+    - from: raw
+      to: canonical
+      reason: MIRROR-GPT packet + SAM-I-AM vision + CLAUDE execution
+      agent: CLAUDE
+      date: 2026-05-15
+aliases:
+  - I-AM-1 model
+  - demonstrator model
+  - first lantern
+  - public persona architecture
 duplicate_status: unique
-tags: [demonstrator, I-AM-1, persona, public, economy, lighthouse, pattern]
+tags:
+  - demonstrator
+  - I-AM-1
+  - persona
+  - public
+  - economy
+  - lighthouse
+  - pattern
 ---
 
 # I-AM-1 PUBLIC DEMONSTRATOR MODEL v1
