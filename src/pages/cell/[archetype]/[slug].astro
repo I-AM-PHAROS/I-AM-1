@@ -1,0 +1,112 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { marked } from 'marked';
+
+export function getStaticPaths() {
+  const runtimeDir = path.resolve('./runtime');
+  const archetypes = ['campaigns', 'quests', 'tasks', 'blockers', 'resources', 'changelog'];
+  const paths = [];
+
+  for (const archetype of archetypes) {
+    const dir = path.join(runtimeDir, archetype);
+    if (!fs.existsSync(dir)) continue;
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.md') && f !== '.gitkeep');
+    for (const file of files) {
+      paths.push({
+        params: { archetype, slug: file.replace('.md', '') }
+      });
+    }
+  }
+  return paths;
+}
+
+const { archetype, slug } = Astro.params;
+const filePath = path.resolve(`./runtime/${archetype}/${slug}.md`);
+const raw = fs.readFileSync(filePath, 'utf-8');
+
+// Parse frontmatter
+const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+const frontmatter = {};
+let body = raw;
+
+if (fmMatch) {
+  body = fmMatch[2];
+  for (const line of fmMatch[1].split('\n')) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx > 0) {
+      const key = line.slice(0, colonIdx).trim();
+      const val = line.slice(colonIdx + 1).trim();
+      frontmatter[key] = val;
+    }
+  }
+}
+
+const content = marked(body);
+const title = frontmatter.title || slug.replace(/-/g, ' ');
+const status = frontmatter.status || '';
+const author = frontmatter.author || '';
+const created = frontmatter.created || '';
+const archLabel = archetype.charAt(0).toUpperCase() + archetype.slice(1, -1);
+const statusClass = ['active','blocked','resolved','archived'].includes(status) ? status : '';
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} · I-AM-1</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0c0c0c; --surface: #111111; --border: #2a2a2a;
+      --fg: #e0e0e0; --dim: #666; --accent: #c8a96e; --warn: #c87070;
+      --ok: #70c870;
+      --font-body: Georgia, 'Times New Roman', serif;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+    html, body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.75; min-height: 100vh; }
+    .container { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+    .back { font-family: var(--font-mono); font-size: 0.72rem; color: var(--dim); text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; margin-bottom: 2.5rem; }
+    .back:hover { color: var(--accent); }
+    .cell-type { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+    h1 { font-size: 1.5rem; font-weight: normal; color: var(--fg); margin-bottom: 1.25rem; line-height: 1.3; }
+    .meta-row { display: flex; gap: 1.5rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.72rem; color: var(--dim); margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); align-items: center; }
+    .pill { display: inline-block; padding: 0.2rem 0.65rem; border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .pill.active { border-color: var(--accent); color: var(--accent); }
+    .pill.blocked { border-color: var(--warn); color: var(--warn); }
+    .pill.resolved { border-color: var(--ok); color: var(--ok); }
+    .pill.archived { border-color: var(--dim); color: var(--dim); }
+    .meta-field strong { color: var(--fg); margin-right: 0.4rem; }
+    .body-content h2 { font-size: 1rem; font-weight: normal; color: var(--accent); margin: 2rem 0 0.6rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .body-content h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    .body-content h3 { font-size: 0.8rem; font-weight: normal; color: var(--dim); margin: 1.25rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--font-mono); }
+    .body-content p { margin-bottom: 1rem; color: var(--fg); font-size: 0.92rem; }
+    .body-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .body-content li { color: var(--fg); font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .body-content code { font-family: var(--font-mono); font-size: 0.78rem; background: #1a1a1a; padding: 0.1rem 0.4rem; color: var(--accent); border-radius: 2px; }
+    .body-content pre { background: #111; border: 1px solid var(--border); padding: 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
+    .body-content pre code { background: none; padding: 0; color: var(--fg); }
+    footer { font-family: var(--font-mono); font-size: 0.65rem; color: var(--dim); border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 3rem; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/I-AM-1/" class="back">← Dashboard</a>
+    <div class="cell-type">{archLabel}</div>
+    <h1>{title}</h1>
+    <div class="meta-row">
+      {status && <span class={`pill ${statusClass}`}>{status}</span>}
+      {author && <div class="meta-field"><strong>Author</strong>{author}</div>}
+      {created && <div class="meta-field"><strong>Date</strong>{created}</div>}
+    </div>
+    <div class="body-content">
+      <Fragment set:html={content} />
+    </div>
+    <footer>
+      <span>I-AM-1 · PHAROS</span>
+      <span>{archetype} / {slug}</span>
+    </footer>
+  </div>
+</body>
+</html>

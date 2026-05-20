@@ -3,98 +3,78 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 
-// Read runtime files
-const indexRaw = fs.readFileSync(path.resolve('./runtime/index.md'), 'utf-8');
-const stateRaw = fs.readFileSync(path.resolve('./runtime/state.md'), 'utf-8');
+const runtimeBase = path.resolve('./runtime');
 
-const indexContent = marked(indexRaw);
-const stateContent = marked(stateRaw);
+// Helper: parse frontmatter
+function parseFM(raw) {
+  const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!m) return { fm: {}, body: raw };
+  const fm = {};
+  for (const line of m[1].split('\n')) {
+    const ci = line.indexOf(':');
+    if (ci > 0) fm[line.slice(0,ci).trim()] = line.slice(ci+1).trim();
+  }
+  return { fm, body: m[2] };
+}
 
-// Load campaigns
-const campaignsDir = path.resolve('./runtime/campaigns');
-const campaigns = fs.readdirSync(campaignsDir)
-  .filter(f => f.endsWith('.md') && f !== '.gitkeep')
-  .map(f => {
-    const raw = fs.readFileSync(path.join(campaignsDir, f), 'utf-8');
-    const lines = raw.split('\n');
-    const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
-    const body = marked(raw);
-    return { title, body, slug: f.replace('.md','') };
-  });
+// Helper: load archetype folder
+function loadDir(archetype, extraFields = []) {
+  const dir = path.join(runtimeBase, archetype);
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith('.md') && f !== '.gitkeep')
+    .map(f => {
+      const raw = fs.readFileSync(path.join(dir, f), 'utf-8');
+      const { fm } = parseFM(raw);
+      const slug = f.replace('.md','');
+      const obj = {
+        title: fm.title || slug.replace(/-/g,' '),
+        status: fm.status || '—',
+        slug,
+        archetype,
+        href: `/I-AM-1/cell/${archetype}/${slug}/`
+      };
+      for (const field of extraFields) obj[field] = fm[field] || '';
+      return obj;
+    });
+}
 
-// Load quests
-const questsDir = path.resolve('./runtime/quests');
-const quests = fs.readdirSync(questsDir)
-  .filter(f => f.endsWith('.md') && f !== '.gitkeep')
-  .map(f => {
-    const raw = fs.readFileSync(path.join(questsDir, f), 'utf-8');
-    const lines = raw.split('\n');
-    const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
-    const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
-    const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
-    const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
-    return { title, status, slug: f.replace('.md','') };
-  });
+const campaigns  = loadDir('campaigns');
+const quests     = loadDir('quests');
+const tasks      = loadDir('tasks', ['assigned_to']);
+const blockers   = loadDir('blockers', ['blocks']);
+const resources  = loadDir('resources', ['resource_type', 'amount_needed']);
+const changelog  = loadDir('changelog', ['date','version']);
 
-// Load tasks
-const tasksDir = path.resolve('./runtime/tasks');
-const tasks = fs.existsSync(tasksDir)
-  ? fs.readdirSync(tasksDir)
-      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
-      .map(f => {
-        const raw = fs.readFileSync(path.join(tasksDir, f), 'utf-8');
-        const lines = raw.split('\n');
-        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
-        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
-        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
-        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
-        const ownerLine = lines.find(l => l.toLowerCase().startsWith('## owner'));
-        const ownerIdx = ownerLine ? lines.indexOf(ownerLine) : -1;
-        const owner = ownerIdx >= 0 ? (lines[ownerIdx + 2]?.trim() ?? 'Unassigned') : 'Unassigned';
-        return { title, status, owner, slug: f.replace('.md','') };
-      })
-  : [];
+// Financial state
+let fin = { cash_on_hand:'—', monthly_burn:'—', immediate_need:'—', pledged:'—', runway_days:'—', last_updated:'—' };
+const finPath = path.join(runtimeBase, 'financial.md');
+if (fs.existsSync(finPath)) {
+  const { fm } = parseFM(fs.readFileSync(finPath,'utf-8'));
+  fin = { ...fin, ...fm };
+}
 
-// Load blockers
-const blockersDir = path.resolve('./runtime/blockers');
-const blockers = fs.existsSync(blockersDir)
-  ? fs.readdirSync(blockersDir)
-      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
-      .map(f => {
-        const raw = fs.readFileSync(path.join(blockersDir, f), 'utf-8');
-        const lines = raw.split('\n');
-        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
-        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
-        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
-        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
-        const blocksLine = lines.find(l => l.toLowerCase().startsWith('## blocks'));
-        const blocksIdx = blocksLine ? lines.indexOf(blocksLine) : -1;
-        const blocks = blocksIdx >= 0 ? (lines[blocksIdx + 2]?.trim() ?? '—') : '—';
-        return { title, status, blocks, slug: f.replace('.md','') };
-      })
-  : [];
+// Index + state content
+const indexRaw = fs.existsSync(path.join(runtimeBase,'index.md'))
+  ? fs.readFileSync(path.join(runtimeBase,'index.md'),'utf-8') : '';
+const indexContent = marked(parseFM(indexRaw).body);
 
-// Load resources
-const resourcesDir = path.resolve('./runtime/resources');
-const resources = fs.existsSync(resourcesDir)
-  ? fs.readdirSync(resourcesDir)
-      .filter(f => f.endsWith('.md') && f !== '.gitkeep')
-      .map(f => {
-        const raw = fs.readFileSync(path.join(resourcesDir, f), 'utf-8');
-        const lines = raw.split('\n');
-        const title = lines.find(l => l.startsWith('# '))?.replace('# ', '') ?? f.replace('.md','');
-        const typeLine = lines.find(l => l.toLowerCase().startsWith('## type'));
-        const typeIdx = typeLine ? lines.indexOf(typeLine) : -1;
-        const type = typeIdx >= 0 ? (lines[typeIdx + 2]?.trim() ?? '—') : '—';
-        const statusLine = lines.find(l => l.toLowerCase().startsWith('## status'));
-        const statusIdx = statusLine ? lines.indexOf(statusLine) : -1;
-        const status = statusIdx >= 0 ? (lines[statusIdx + 2]?.trim() ?? '—') : '—';
-        const purposeLine = lines.find(l => l.toLowerCase().startsWith('## purpose'));
-        const purposeIdx = purposeLine ? lines.indexOf(purposeLine) : -1;
-        const purpose = purposeIdx >= 0 ? (lines[purposeIdx + 2]?.trim() ?? '') : '';
-        return { title, type, status, purpose, slug: f.replace('.md','') };
-      })
-  : [];
+// Progress items (manual definition, derived from task status)
+const progressItems = [
+  { label: 'Public dashboard', done: true },
+  { label: 'Canonical cell infrastructure', done: true },
+  { label: 'Organ cells written', done: true },
+  { label: 'Clickable cell navigation', done: true },
+  { label: 'Financial widget', done: true },
+  { label: 'Changelog', done: true },
+  { label: 'Projection engine (canonical → runtime)', done: false },
+  { label: 'NOOR character card', done: false },
+  { label: 'Telegram intake bot', done: false },
+  { label: 'Contribution system', done: false },
+  { label: 'Graph integration', done: false },
+];
+const doneCount = progressItems.filter(p => p.done).length;
+const pct = Math.round((doneCount / progressItems.length) * 100);
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -104,391 +84,279 @@ const resources = fs.existsSync(resourcesDir)
   <title>I-AM-1 · PHAROS</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0c0c0c;
-      --surface: #111111;
-      --border: #222222;
-      --fg: #d8d8d8;
-      --dim: #555555;
-      --accent: #c8a96e;
-      --warn: #c87070;
-      --tag: #3a3a3a;
-      --font-body: Georgia, 'Times New Roman', serif;
-      --font-mono: 'Courier New', Courier, monospace;
+      --bg: #0a0a0a; --surface: #121212; --surface2: #181818;
+      --border: #252525; --fg: #e2e2e2; --dim: #5a5a5a;
+      --accent: #c8a96e; --warn: #c87070; --ok: #70c870;
+      --font-body: Georgia,'Times New Roman',serif;
+      --font-mono: 'Courier New',Courier,monospace;
     }
-
-    html, body {
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--font-body);
-      line-height: 1.7;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem 6rem;
-    }
-
-    section { margin-bottom: 4rem; }
-
+    html, body { background:var(--bg); color:var(--fg); font-family:var(--font-body); line-height:1.75; min-height:100vh; }
+    .container { max-width:860px; margin:0 auto; padding:3rem 1.5rem 6rem; }
+    section { margin-bottom:3.5rem; }
     .section-label {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--dim);
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
+      font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.2em;
+      text-transform:uppercase; color:var(--dim); margin-bottom:1rem;
+      padding-bottom:0.5rem; border-bottom:1px solid var(--border);
     }
 
     /* IDENTITY */
-    .identity-header h1 {
-      font-size: 1.5rem;
-      font-weight: normal;
-      color: var(--accent);
-      letter-spacing: 0.05em;
-      margin-bottom: 0.25rem;
-    }
-    .identity-header .tagline {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--dim);
-      margin-bottom: 1.5rem;
-    }
-    .identity-body p { margin-bottom: 0.9rem; color: var(--fg); }
-    .identity-body h2 {
-      font-size: 1rem;
-      font-weight: normal;
-      color: var(--accent);
-      margin: 1.5rem 0 0.5rem;
-    }
+    .id-header h1 { font-size:1.6rem; font-weight:normal; color:var(--accent); letter-spacing:0.04em; margin-bottom:0.2rem; }
+    .id-header .tagline { font-family:var(--font-mono); font-size:0.75rem; color:var(--dim); margin-bottom:1.5rem; }
+    .id-body p { margin-bottom:0.85rem; font-size:0.93rem; }
+    .id-body h2 { font-size:0.95rem; font-weight:normal; color:var(--accent); margin:1.5rem 0 0.4rem; }
 
-    /* STATE */
-    .state-content h2 {
-      font-size: 0.9rem;
-      font-weight: normal;
-      color: var(--accent);
-      margin: 1.25rem 0 0.4rem;
-    }
-    .state-content h2:first-child { margin-top: 0; }
-    .state-content p,
-    .state-content li {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      color: var(--fg);
-      margin-bottom: 0.3rem;
-    }
-    .state-content ul { padding-left: 1.2rem; }
+    /* METRICS */
+    .metrics-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:0.75rem; }
+    .metric-card { background:var(--surface); border:1px solid var(--border); padding:1rem; text-align:center; }
+    .metric-card .num { font-family:var(--font-mono); font-size:2.2rem; color:var(--accent); line-height:1; margin-bottom:0.35rem; }
+    .metric-card .lbl { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--dim); }
+    .metric-card.warn-card .num { color:var(--warn); }
 
-    /* METRICS ROW */
-    .metrics-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 1rem;
-      margin-bottom: 0;
-    }
-    .metric-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1rem;
-      text-align: center;
-    }
-    .metric-card .metric-count {
-      font-family: var(--font-mono);
-      font-size: 2rem;
-      color: var(--accent);
-      line-height: 1;
-      margin-bottom: 0.4rem;
-    }
-    .metric-card .metric-label {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--dim);
-    }
-    .metric-card.has-blockers .metric-count { color: var(--warn); }
+    /* FINANCIAL */
+    .fin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.75rem; margin-bottom:1rem; }
+    .fin-item { background:var(--surface); border:1px solid var(--border); padding:0.85rem 1rem; }
+    .fin-item .fin-label { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem; }
+    .fin-item .fin-value { font-family:var(--font-mono); font-size:1.2rem; color:var(--fg); }
+    .fin-item .fin-value.need { color:var(--warn); }
+    .fin-item .fin-value.ok { color:var(--ok); }
+    .fin-updated { font-family:var(--font-mono); font-size:0.65rem; color:var(--dim); }
+    .fin-cta { margin-top:1rem; font-family:var(--font-mono); font-size:0.78rem; color:var(--dim); }
+    .fin-cta a { color:var(--accent); text-decoration:none; }
+    .fin-cta a:hover { text-decoration:underline; }
+
+    /* PROGRESS */
+    .progress-bar-wrap { background:var(--surface); border:1px solid var(--border); height:6px; margin-bottom:1rem; }
+    .progress-bar-fill { background:var(--accent); height:100%; transition:width 0.3s; }
+    .progress-pct { font-family:var(--font-mono); font-size:0.72rem; color:var(--accent); margin-bottom:0.75rem; }
+    .progress-list { list-style:none; padding:0; }
+    .progress-list li { font-family:var(--font-mono); font-size:0.78rem; padding:0.35rem 0; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.6rem; color:var(--dim); }
+    .progress-list li.done { color:var(--fg); }
+    .progress-list li .check { color:var(--ok); width:1rem; flex-shrink:0; }
+    .progress-list li .cross { color:var(--border); width:1rem; flex-shrink:0; }
+
+    /* ITEM LISTS */
+    .item-list { list-style:none; padding:0; }
+    .item-list li { padding:0.65rem 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }
+    .item-list li:first-child { border-top:1px solid var(--border); }
+    .item-link { font-family:var(--font-mono); font-size:0.82rem; color:var(--fg); text-decoration:none; }
+    .item-link:hover { color:var(--accent); }
+    .item-meta { font-family:var(--font-mono); font-size:0.72rem; color:var(--dim); white-space:nowrap; text-align:right; flex-shrink:0; }
+    .item-meta.warn { color:var(--warn); }
+    .item-meta.ok { color:var(--ok); }
 
     /* CAMPAIGNS */
-    .campaign-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .campaign-card h1 {
-      font-size: 1rem;
-      font-weight: normal;
-      color: var(--accent);
-      margin-bottom: 0.75rem;
-    }
-    .campaign-card h2 {
-      font-size: 0.85rem;
-      font-weight: normal;
-      color: var(--dim);
-      margin: 1rem 0 0.4rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-family: var(--font-mono);
-    }
-    .campaign-card p,
-    .campaign-card li {
-      font-size: 0.85rem;
-      color: var(--fg);
-      margin-bottom: 0.3rem;
-    }
-    .campaign-card ul { padding-left: 1.2rem; }
+    .campaign-card { background:var(--surface); border:1px solid var(--border); padding:1.25rem 1.5rem; margin-bottom:0.75rem; }
+    .campaign-card a { color:var(--accent); text-decoration:none; font-size:0.95rem; }
+    .campaign-card a:hover { text-decoration:underline; }
+    .campaign-card p { font-size:0.85rem; color:var(--fg); margin-top:0.5rem; }
 
-    /* LISTS — quests / tasks / blockers / resources */
-    .item-list {
-      list-style: none;
-      padding: 0;
-    }
-    .item-list li {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--border);
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      gap: 1rem;
-    }
-    .item-list li:first-child { border-top: 1px solid var(--border); }
-    .item-title { color: var(--fg); }
-    .item-meta {
-      color: var(--dim);
-      white-space: nowrap;
-      font-size: 0.75rem;
-      text-align: right;
-    }
-    .item-meta.warn { color: var(--warn); }
-
-    /* RESOURCES */
-    .resource-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1rem 1.25rem;
-      margin-bottom: 0.75rem;
-    }
-    .resource-card .resource-title {
-      font-size: 0.9rem;
-      font-weight: normal;
-      color: var(--accent);
-      margin-bottom: 0.35rem;
-    }
-    .resource-card .resource-type {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--dim);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-    }
-    .resource-card .resource-purpose {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--fg);
-    }
+    /* CHANGELOG */
+    .changelog-item { padding:0.6rem 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }
+    .changelog-item:first-child { border-top:1px solid var(--border); }
+    .cl-date { font-family:var(--font-mono); font-size:0.72rem; color:var(--dim); flex-shrink:0; }
+    .cl-link { font-family:var(--font-mono); font-size:0.82rem; color:var(--fg); text-decoration:none; }
+    .cl-link:hover { color:var(--accent); }
+    .cl-version { font-family:var(--font-mono); font-size:0.65rem; color:var(--accent); }
 
     /* CONTRIBUTE */
-    .contribute-block {
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      padding: 1.5rem;
-    }
-    .contribute-block p {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      color: var(--fg);
-      margin-bottom: 0.5rem;
-    }
-    .contribute-block .cta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1.25rem;
-    }
-    .cta-link {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: var(--accent);
-      text-decoration: none;
-      border: 1px solid var(--accent);
-      padding: 0.4rem 0.9rem;
-    }
-    .cta-link:hover { background: var(--accent); color: var(--bg); }
+    .contribute-block { background:var(--surface); border:1px solid var(--accent); padding:1.5rem; }
+    .contribute-block p { font-family:var(--font-mono); font-size:0.82rem; color:var(--fg); margin-bottom:0.5rem; }
+    .cta-row { display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1.25rem; }
+    .cta-link { font-family:var(--font-mono); font-size:0.78rem; color:var(--accent); text-decoration:none; border:1px solid var(--accent); padding:0.4rem 0.9rem; }
+    .cta-link:hover { background:var(--accent); color:var(--bg); }
 
-    /* EMPTY STATE */
-    .empty {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      color: var(--dim);
-    }
-
-    /* FOOTER */
-    footer {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      color: var(--dim);
-      border-top: 1px solid var(--border);
-      padding-top: 1.5rem;
-      margin-top: 2rem;
-    }
+    .empty { font-family:var(--font-mono); font-size:0.8rem; color:var(--dim); }
+    footer { font-family:var(--font-mono); font-size:0.65rem; color:var(--dim); border-top:1px solid var(--border); padding-top:1.5rem; margin-top:2rem; display:flex; justify-content:space-between; }
   </style>
 </head>
 <body>
-  <div class="container">
+<div class="container">
 
-    <!-- IDENTITY -->
-    <section class="identity-header">
-      <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.1</div>
-      <h1>I-AM-1</h1>
-      <div class="tagline">node_001 · active · sovereign</div>
-      <div class="identity-body">
-        <Fragment set:html={indexContent} />
+  <!-- IDENTITY -->
+  <section class="id-header">
+    <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.2</div>
+    <h1>I-AM-1</h1>
+    <div class="tagline">node_001 · active · sovereign</div>
+    <div class="id-body"><Fragment set:html={indexContent} /></div>
+  </section>
+
+  <!-- METRICS -->
+  <section>
+    <div class="section-label">System State</div>
+    <div class="metrics-row">
+      <div class="metric-card"><div class="num">{campaigns.length}</div><div class="lbl">Campaigns</div></div>
+      <div class="metric-card"><div class="num">{quests.length}</div><div class="lbl">Quests</div></div>
+      <div class="metric-card"><div class="num">{tasks.length}</div><div class="lbl">Tasks</div></div>
+      <div class={`metric-card${blockers.length > 0 ? ' warn-card' : ''}`}><div class="num">{blockers.length}</div><div class="lbl">Blockers</div></div>
+      <div class="metric-card"><div class="num">{resources.length}</div><div class="lbl">Resources</div></div>
+      <div class="metric-card"><div class="num">{pct}%</div><div class="lbl">Progress</div></div>
+    </div>
+  </section>
+
+  <!-- FINANCIAL -->
+  <section>
+    <div class="section-label">Financial State</div>
+    <div class="fin-grid">
+      <div class="fin-item">
+        <div class="fin-label">Cash on Hand</div>
+        <div class="fin-value">${fin.cash_on_hand}</div>
       </div>
-    </section>
-
-    <!-- METRICS ROW -->
-    <section>
-      <div class="section-label">System State</div>
-      <div class="metrics-row">
-        <div class="metric-card">
-          <div class="metric-count">{campaigns.length}</div>
-          <div class="metric-label">Campaigns</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-count">{quests.length}</div>
-          <div class="metric-label">Quests</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-count">{tasks.length}</div>
-          <div class="metric-label">Tasks</div>
-        </div>
-        <div class={`metric-card${blockers.length > 0 ? ' has-blockers' : ''}`}>
-          <div class="metric-count">{blockers.length}</div>
-          <div class="metric-label">Blockers</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-count">{resources.length}</div>
-          <div class="metric-label">Resources</div>
-        </div>
+      <div class="fin-item">
+        <div class="fin-label">Immediate Need</div>
+        <div class="fin-value need">${fin.immediate_need}</div>
       </div>
-    </section>
-
-    <!-- CURRENT STATE -->
-    <section>
-      <div class="section-label">Current State</div>
-      <div class="state-content">
-        <Fragment set:html={stateContent} />
+      <div class="fin-item">
+        <div class="fin-label">Monthly Burn</div>
+        <div class="fin-value">${fin.monthly_burn}</div>
       </div>
-    </section>
+      <div class="fin-item">
+        <div class="fin-label">Pledged</div>
+        <div class="fin-value ok">${fin.pledged}</div>
+      </div>
+      <div class="fin-item">
+        <div class="fin-label">Runway</div>
+        <div class="fin-value">{fin.runway_days} days</div>
+      </div>
+    </div>
+    <div class="fin-updated">Last updated: {fin.last_updated}</div>
+    <div class="fin-cta">
+      Support this mission: <a href="https://t.me/I_AM_1ONE">Telegram</a> · <a href="mailto:the_i.am.1@proton.me">Email</a>
+    </div>
+  </section>
 
-    <!-- CAMPAIGNS -->
-    <section>
-      <div class="section-label">Active Campaigns</div>
-      {campaigns.length === 0 ? (
-        <p class="empty">No active campaigns.</p>
-      ) : (
-        campaigns.map(c => (
+  <!-- PROGRESS -->
+  <section>
+    <div class="section-label">Build Progress</div>
+    <div class="progress-pct">{doneCount} of {progressItems.length} milestones · {pct}%</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style={`width:${pct}%`}></div></div>
+    <ul class="progress-list">
+      {progressItems.map(p => (
+        <li class={p.done ? 'done' : ''}>
+          {p.done
+            ? <span class="check">✓</span>
+            : <span class="cross">○</span>}
+          {p.label}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- CAMPAIGNS -->
+  <section>
+    <div class="section-label">Active Campaigns</div>
+    {campaigns.length === 0
+      ? <p class="empty">No active campaigns.</p>
+      : campaigns.map(c => (
           <div class="campaign-card">
-            <Fragment set:html={c.body} />
+            <a href={c.href}>{c.title}</a>
+            <p>{c.status}</p>
           </div>
         ))
-      )}
-    </section>
+    }
+  </section>
 
-    <!-- QUESTS -->
-    <section>
-      <div class="section-label">Active Quests</div>
-      {quests.length === 0 ? (
-        <p class="empty">No active quests.</p>
-      ) : (
-        <ul class="item-list">
+  <!-- QUESTS -->
+  <section>
+    <div class="section-label">Active Quests</div>
+    {quests.length === 0
+      ? <p class="empty">No active quests.</p>
+      : <ul class="item-list">
           {quests.map(q => (
             <li>
-              <span class="item-title">{q.title}</span>
+              <a class="item-link" href={q.href}>{q.title}</a>
               <span class="item-meta">{q.status}</span>
             </li>
           ))}
         </ul>
-      )}
-    </section>
+    }
+  </section>
 
-    <!-- TASKS -->
-    <section>
-      <div class="section-label">Open Tasks</div>
-      {tasks.length === 0 ? (
-        <p class="empty">No open tasks.</p>
-      ) : (
-        <ul class="item-list">
+  <!-- TASKS -->
+  <section>
+    <div class="section-label">Open Tasks</div>
+    {tasks.length === 0
+      ? <p class="empty">No open tasks.</p>
+      : <ul class="item-list">
           {tasks.map(t => (
             <li>
-              <span class="item-title">{t.title}</span>
-              <span class="item-meta">{t.owner} · {t.status}</span>
+              <a class="item-link" href={t.href}>{t.title}</a>
+              <span class="item-meta">{t.assigned_to || 'unassigned'} · {t.status}</span>
             </li>
           ))}
         </ul>
-      )}
-    </section>
+    }
+  </section>
 
-    <!-- BLOCKERS -->
-    <section>
-      <div class="section-label">Active Blockers</div>
-      {blockers.length === 0 ? (
-        <p class="empty">No active blockers.</p>
-      ) : (
-        <ul class="item-list">
+  <!-- BLOCKERS -->
+  <section>
+    <div class="section-label">Active Blockers</div>
+    {blockers.length === 0
+      ? <p class="empty">No active blockers.</p>
+      : <ul class="item-list">
           {blockers.map(b => (
             <li>
-              <span class="item-title">{b.title}</span>
-              <span class="item-meta warn">blocks: {b.blocks}</span>
+              <a class="item-link" href={b.href}>{b.title}</a>
+              <span class="item-meta warn">{b.blocks ? `blocks: ${b.blocks}` : b.status}</span>
             </li>
           ))}
         </ul>
-      )}
-    </section>
+    }
+  </section>
 
-    <!-- RESOURCES -->
-    <section>
-      <div class="section-label">Resource Needs</div>
-      {resources.length === 0 ? (
-        <p class="empty">No open resource needs.</p>
-      ) : (
-        resources.map(r => (
-          <div class="resource-card">
-            <div class="resource-title">{r.title}</div>
-            <div class="resource-type">{r.type} · {r.status}</div>
-            {r.purpose && <div class="resource-purpose">{r.purpose}</div>}
+  <!-- RESOURCES -->
+  <section>
+    <div class="section-label">Resource Needs</div>
+    {resources.length === 0
+      ? <p class="empty">No open resource needs.</p>
+      : <ul class="item-list">
+          {resources.map(r => (
+            <li>
+              <a class="item-link" href={r.href}>{r.title}</a>
+              <span class="item-meta">{r.resource_type}{r.amount_needed ? ` · ${r.amount_needed}` : ''}</span>
+            </li>
+          ))}
+        </ul>
+    }
+  </section>
+
+  <!-- CHANGELOG -->
+  <section>
+    <div class="section-label">Changelog</div>
+    {changelog.length === 0
+      ? <p class="empty">No entries yet.</p>
+      : changelog.sort((a,b) => b.slug.localeCompare(a.slug)).map(c => (
+          <div class="changelog-item">
+            <a class="cl-link" href={c.href}>{c.title || c.slug}</a>
+            <div style="display:flex;gap:0.75rem;align-items:baseline;">
+              {c.version && <span class="cl-version">{c.version}</span>}
+              <span class="cl-date">{c.date || c.slug}</span>
+            </div>
           </div>
         ))
-      )}
-    </section>
+    }
+  </section>
 
-    <!-- CONTRIBUTE -->
-    <section>
-      <div class="section-label">Contribute</div>
-      <div class="contribute-block">
-        <p>This system builds through participation.</p>
-        <p>Every contribution is permanently credited. Every task is visible. Every quest is open.</p>
-        <p>Claim a task. Offer a skill. Fund a resource need. The work is here. The mission is real.</p>
-        <div class="cta-row">
-          <a class="cta-link" href="mailto:the_i.am.1@proton.me">Email I-AM-1</a>
-          <a class="cta-link" href="https://t.me/I_AM_1ONE" target="_blank">Telegram</a>
-          <a class="cta-link" href="https://github.com/I-AM-PHAROS/I-AM-1" target="_blank">GitHub</a>
-        </div>
+  <!-- CONTRIBUTE -->
+  <section>
+    <div class="section-label">Contribute</div>
+    <div class="contribute-block">
+      <p>This system builds through participation.</p>
+      <p>Every contribution is permanently credited. Every task is visible. Every quest is open.</p>
+      <p>Claim a task. Offer a skill. Fund a resource need.</p>
+      <div class="cta-row">
+        <a class="cta-link" href="mailto:the_i.am.1@proton.me">Email I-AM-1</a>
+        <a class="cta-link" href="https://t.me/I_AM_1ONE" target="_blank">Telegram</a>
+        <a class="cta-link" href="https://github.com/I-AM-PHAROS/I-AM-1" target="_blank">GitHub</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <footer>
-      I-AM-1 · PHAROS · node_001 · {new Date().getFullYear()}
-    </footer>
+  <footer>
+    <span>I-AM-1 · PHAROS · node_001</span>
+    <span>{new Date().getFullYear()}</span>
+  </footer>
 
-  </div>
+</div>
 </body>
 </html>
