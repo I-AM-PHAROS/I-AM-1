@@ -76,7 +76,7 @@ Identity stack:
 [[SAM-I-AM]]
 = sovereign private identity boundary
 
-[[EYE/I-AM-1/I-AM-1]]
+[[SAM-I-AM/I-AM-1/I-AM-1]]
 = public semantic projection
 
 [[_INBOX/1-I/1_AM/AM]]
@@ -102,7 +102,7 @@ Private identity remains sovereign.
 
 PHAROS recognizes:
 
-[[EYE/I-AM-1/I-AM-1]]
+[[SAM-I-AM/I-AM-1/I-AM-1]]
 
 PHAROS does NOT require:
 

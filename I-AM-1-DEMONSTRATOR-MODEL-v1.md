@@ -19,14 +19,14 @@ parent:
   - "[[SOVEREIGN-IDENTITY-VISIBILITY-LAW-v1]]"
 serves:
   - "[[_INBOX/1_PHAROS/PHAROS]]"
-  - "[[EYE/I-AM-1/I-AM-1]]"
+  - "[[SAM-I-AM/I-AM-1/I-AM-1]]"
 related_nodes:
   - predicate: REQUIRES
     target: "[[SOVEREIGN-IDENTITY-VISIBILITY-LAW-v1]]"
   - predicate: REQUIRES
     target: "[[UNIVERSAL-CELL-CONSTITUTION-v1]]"
   - predicate: GOVERNS
-    target: "[[EYE/I-AM-1/I-AM-1]]"
+    target: "[[SAM-I-AM/I-AM-1/I-AM-1]]"
   - predicate: RELATES_TO
     target: COHERENCE-ECONOMY-FRAMEWORK-v1
 execution:
