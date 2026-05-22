@@ -44,6 +44,7 @@ const quests     = loadDir('quests');
 const tasks      = loadDir('tasks', ['assigned_to']);
 const blockers   = loadDir('blockers', ['blocks']);
 const resources  = loadDir('resources', ['resource_type', 'amount_needed']);
+const questions  = loadDir('questions', ['source_cell_id']);
 const changelog  = loadDir('changelog', ['date','version']);
 
 // Financial state
@@ -59,7 +60,7 @@ const indexRaw = fs.existsSync(path.join(runtimeBase,'index.md'))
   ? fs.readFileSync(path.join(runtimeBase,'index.md'),'utf-8') : '';
 const indexContent = marked(parseFM(indexRaw).body);
 
-// Progress items (manual definition, derived from task status)
+// Progress items
 const progressItems = [
   { label: 'Public dashboard', done: true },
   { label: 'Canonical cell infrastructure', done: true },
@@ -67,9 +68,9 @@ const progressItems = [
   { label: 'Clickable cell navigation', done: true },
   { label: 'Financial widget', done: true },
   { label: 'Changelog', done: true },
-  { label: 'Projection engine (canonical → runtime)', done: false },
-  { label: 'NOOR character card', done: false },
-  { label: 'Telegram intake bot', done: false },
+  { label: 'NOOR Telegram intake bot', done: true },
+  { label: 'Projection engine (canonical → runtime)', done: true },
+  { label: 'Questions rendered on dashboard', done: true },
   { label: 'Contribution system', done: false },
   { label: 'Graph integration', done: false },
 ];
@@ -107,7 +108,7 @@ const pct = Math.round((doneCount / progressItems.length) * 100);
     .id-body h2 { font-size:0.95rem; font-weight:normal; color:var(--accent); margin:1.5rem 0 0.4rem; }
 
     /* METRICS */
-    .metrics-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:0.75rem; }
+    .metrics-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:0.75rem; }
     .metric-card { background:var(--surface); border:1px solid var(--border); padding:1rem; text-align:center; }
     .metric-card .num { font-family:var(--font-mono); font-size:2.2rem; color:var(--accent); line-height:1; margin-bottom:0.35rem; }
     .metric-card .lbl { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--dim); }
@@ -175,7 +176,7 @@ const pct = Math.round((doneCount / progressItems.length) * 100);
 
   <!-- IDENTITY -->
   <section class="id-header">
-    <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.2</div>
+    <div class="section-label">I-AM-1 · PHAROS Demonstrator · v0.3</div>
     <h1>I-AM-1</h1>
     <div class="tagline">node_001 · active · sovereign</div>
     <div class="id-body"><Fragment set:html={indexContent} /></div>
@@ -190,6 +191,7 @@ const pct = Math.round((doneCount / progressItems.length) * 100);
       <div class="metric-card"><div class="num">{tasks.length}</div><div class="lbl">Tasks</div></div>
       <div class={`metric-card${blockers.length > 0 ? ' warn-card' : ''}`}><div class="num">{blockers.length}</div><div class="lbl">Blockers</div></div>
       <div class="metric-card"><div class="num">{resources.length}</div><div class="lbl">Resources</div></div>
+      <div class="metric-card"><div class="num">{questions.length}</div><div class="lbl">Questions</div></div>
       <div class="metric-card"><div class="num">{pct}%</div><div class="lbl">Progress</div></div>
     </div>
   </section>
@@ -314,6 +316,22 @@ const pct = Math.round((doneCount / progressItems.length) * 100);
             <li>
               <a class="item-link" href={r.href}>{r.title}</a>
               <span class="item-meta">{r.resource_type}{r.amount_needed ? ` · ${r.amount_needed}` : ''}</span>
+            </li>
+          ))}
+        </ul>
+    }
+  </section>
+
+  <!-- QUESTIONS -->
+  <section>
+    <div class="section-label">Active Questions</div>
+    {questions.length === 0
+      ? <p class="empty">No active questions.</p>
+      : <ul class="item-list">
+          {questions.map(q => (
+            <li>
+              <a class="item-link" href={q.href}>{q.title}</a>
+              <span class="item-meta">{q.status}</span>
             </li>
           ))}
         </ul>
